@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+	<title>File Upload</title>
+
+    <link href="../static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Additional CSS Files -->
+    <link rel="stylesheet" href="../static/assets/css/fontawesome.css">
+    <link rel="stylesheet" href="../static/assets/css/templatemo-space-dynamic.css">
+    <link rel="stylesheet" href="../static/assets/css/animated.css">
+    <link rel="stylesheet" href="../static/assets/css/owl.css">
+
+	<style type="text/css">
+        *{
+            margin: 0;
+            padding: 0;
+        }
+
+		*, *:before, *:after {
+                box-sizing: border-box;
+            }
+
+            .mainWrapper{
+                width: 100%;
+                height: 100vh;
+                background-image: url("../static/assets/images/upload.svg");
+                background-position: center;
+                background-repeat: no-repeat;
+                background-size: 600px;
+            }
+
+            .requirements{
+                width: 25%;
+                float: left;
+                background-color: #e9efec96;
+                height: 100vh;
+                padding: 50px;
+            }
+    
+        .file-upload {
+            width: 65%;
+            margin-left: 65px;
+            float: left;
+            text-align: center;
+            padding-top: 150px;
+            
+        }
+
+        .file-upload-btn {
+            width: 12%;
+            margin: 0;
+            color: #fff;
+            background: black;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            border-bottom: 4px solid black;
+            transition: all .2s ease;
+            outline: none;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .file-upload-btn:hover {
+            background: dodgerblue;
+            color: #ffffff;
+            border-bottom: 4px solid dodgerblue;
+            transition: all .2s ease;
+            cursor: pointer;
+        }
+
+        .file-upload-btn:active {
+            border: 0;
+            transition: all .2s ease;
+        }
+
+        .file-upload-content {
+            display: none;
+            text-align: center;
+        }
+
+        .file-upload-input {
+            position: absolute;
+            margin-left: -496px;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            outline: none;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .image-upload-wrap {
+            margin-top: 20px;
+            border: 4px dashed #949e99;
+            position: relative;
+            background-color:  #060505ab;
+        }
+
+        .image-dropping,
+        .image-upload-wrap:hover {
+            background-color: gainsboro;
+            border: 4px dashed #ffffff;
+        }
+
+        .image-title-wrap {
+            padding: 0 15px 15px 15px;
+            color: #222;
+        }
+
+        .drag-text {
+            height: 250px;
+            text-align: center;
+        }
+
+        .drag-text h3 {
+            font-weight: 100;
+            text-transform: uppercase;
+            color: white;
+            padding: 114px 0;
+        }
+
+        .file-upload-image {
+            max-height: 200px;
+            max-width: 200px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        .remove-image {
+            width: 200px;
+            margin: 0;
+            color: #fff;
+            background: #cd4535;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            border-bottom: 4px solid #b02818;
+            transition: all .2s ease;
+            outline: none;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .remove-image:hover {
+            background: grey;
+            color: #ffffff;
+            transition: all .2s ease;
+            cursor: pointer;
+        }
+
+        .remove-image:active {
+            border: 0;
+            transition: all .2s ease;
+        }
+
+        .upload-image {
+            width: 200px;
+            margin: 0;
+            color: #fff;
+            background: lightseagreen;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            border-bottom: 4px solid forestgreen;
+            transition: all .2s ease;
+            outline: none;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .upload-image:hover {
+            background: grey;
+            color: #ffffff;
+            transition: all .2s ease;
+            cursor: pointer;
+        }
+
+        .upload-image:active {
+            border: 0;
+            transition: all .2s ease;
+        }
+        ul {
+  list-style: none;
+  padding: 0;
+  margin-top: 50px;
+    line-height: 29px;
+    font-size: 16px;
+}
+li {
+  padding-left: 1.3em;
+}
+.sideBar li:before {
+  content: "\f00c"; /* FontAwesome Unicode */
+  color: yellowgreen;
+  font-family: FontAwesome;
+  display: inline-block;
+  margin-left: -1.3em; /* same as padding-left set on li */
+  width: 1.3em; /* same as padding-left set on li */
+}
+	</style>
+</head>
+<body>
+
+    <header class="header-area header-sticky wow slideInDown" data-wow-duration="0.75s" data-wow-delay="0s">
+        <div class="container">
+          <div class="row">
+            <div class="col-12">
+              <nav class="main-nav">
+                <!-- ***** Logo Start ***** -->
+                <a href="index.html" class="logo">
+                  <h4>SIMPLY<span>DATA</span></h4>
+                </a>
+                <!-- ***** Logo End ***** -->
+                <!-- ***** Menu Start ***** -->
+                <ul class="nav">
+                  <li class="scroll-to-section"><a href="#top" class="active">Home</a></li>
+                  <li class="scroll-to-section"><a href="#about">About Us</a></li>
+                  <li class="scroll-to-section"><a href="/signIn_Up">Sign-In/Up</a></li>
+                  <!-- <li class="scroll-to-section"><a href="#services">Services</a></li>
+                  <li class="scroll-to-section"><a href="#portfolio">Portfolio</a></li>
+                  <li class="scroll-to-section"><a href="#blog">Blog</a></li> 
+                  <li class="scroll-to-section"><a href="#contact">Message Us</a></li> --> 
+                  <li class="scroll-to-section"><div class="main-red-button"><a href="#contact">Contact Now</a></div></li> 
+                </ul>        
+                <a class='menu-trigger'>
+                    <span>Menu</span>
+                </a>
+                <!-- ***** Menu End ***** -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </header>
+
+    <section class="mainWrapper">
+        <div class="requirements">
+           <h1>Requirements</h1>
+           <ul class="sideBar">
+            <li>File size is less than 10MB</li>
+            <li>File has minimum 5 columns</li>
+            <li>First row has column names</li>
+          </ul>
+        </div>
+        <div class="file-upload">   
+                <div class="image-upload-wrap">
+                    <form id="vts_form" enctype="multipart/form-data" method="post" action="/processFile">
+                        <input class="file-upload-input" enctype="multipart/form-data" name="input-file" type='file' onchange="readURL(this);" accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                        
+                    </form>
+                    <div class="drag-text">
+                        <h3>Drag your excel or click<strong> ADD FILE</strong></h3>
+                    </div>
+                </div>
+                <div class="file-upload-content">
+                    <img class="file-upload-image" src="../static/assets/images/excel_icon.png" alt="excel icon" />
+                    <div class="image-title-wrap">
+                        <button type="button" onclick="removeUpload()" class="remove-image">Remove <span class="image-title">Uploaded Excel</span></button>
+                        <button type="button" onclick="upload_button()" class="upload-image">Upload <span class="image-title">Uploaded Excel</span></button>
+                    </div>
+                </div>
+        </div>
+
+    </section>
+	
+
+
+    <script type="text/javascript">
+        try{
+            removeUpload()
+        }
+        catch{
+            // do nothing
+        }
+    	function readURL(input) {
+        if (input.files && input.files[0]) {
+
+            let reader = new FileReader();
+
+            reader.onload = function (e) {
+                document.querySelector('.image-upload-wrap').style.display = 'none';
+                document.querySelector('.file-upload-content').style.display = 'block';
+
+                let imgTitles = document.querySelectorAll('.image-title');
+
+                for(let title of imgTitles) {
+                    title.innerHTML = input.files[0].name;
+                }
+            };
+
+            reader.readAsDataURL(input.files[0]);
+            // document.getElementById("vts_form")
+
+        } else {
+            removeUpload();
+        }
+    }
+
+    function removeUpload() {
+        document.querySelector('.file-upload-input').value = "";
+        document.querySelector('.file-upload-content').style.display = 'none';
+        document.querySelector('.image-upload-wrap').style.display = 'block';
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        let imageElement = document.querySelector('.image-upload-wrap');
+        let addedClass = 'image-dropping';
+
+        imageElement.addEventListener('dragover', function () {
+            imageElement.classList.add(addedClass)
+        });
+
+        imageElement.addEventListener('dragleave', function () {
+            imageElement.classList.remove(addedClass)
+        });
+    })
+
+    function upload_button(){
+        document.getElementById("vts_form").submit()
+    }
+    </script>
+
+
+</body>
+</html>

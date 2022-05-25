@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+	<title>USER INFO</title>
+
+	<style type="text/css">
+        *{
+            margin: 0;
+            padding: 0;
+        }
+
+		*, *:before, *:after {
+                box-sizing: border-box;
+            }
+
+            .mainWrapper{
+                width: 100%;
+                height: 100vh;
+            }
+
+            .requirements{
+                width: 25%;
+                float: left;
+                background-color: #e9efec96;
+                height: 100vh;
+                padding: 50px;
+            }
+    
+        .file-upload {
+            background-color: #ffffff;
+            width: 35%;
+            margin-left: 65px;
+            float: left;
+            text-align: center;
+            padding-top: 150px;
+        }
+
+        .imgBox{
+          width: 34%;
+          float: left;
+        }
+
+        .imgBox img{
+          width: 100%;
+          height: 100vh;
+        }
+
+        .image-upload-wrap {
+            padding: 10px;
+            height: 370px;
+            margin-top: 20px;
+            /*border: 4px dashed #949e99;*/
+            position: relative;
+        }
+        ul {
+  list-style: none;
+  padding: 0;
+  margin-top: 50px;
+    line-height: 29px;
+    font-size: 16px;
+}
+li {
+  padding-left: 1.3em;
+}
+li:before {
+  content: "\f00c"; /* FontAwesome Unicode */
+  color: yellowgreen;
+  font-family: FontAwesome;
+  display: inline-block;
+  margin-left: -1.3em; /* same as padding-left set on li */
+  width: 1.3em; /* same as padding-left set on li */
+}
+
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  border: solid 1px #ccc;
+  -moz-border-radius: 3px;
+  border-radius: 3px;
+  outline: none;
+  padding: 5px 20px 5px 5px;
+  position: relative;
+  width: 100%;
+}
+.ui-dropdown {
+  margin: 50px auto;
+  position: relative;
+  width: 300px;
+}
+.ui-dropdown:before {
+  content: 'Select Data Time Period';
+  position: absolute;
+  top: -25px;
+  left: 0;
+  font-size: 20px;
+}
+.ui-dropdown:after {
+  background-color: #369;
+  -moz-border-radius: 0 3px 3px 0;
+  border-radius: 0 3px 3px 0;
+  color: #fff;
+  content: '▼';
+  display: block;
+  font-size: 10px;
+  width: 25px;
+  padding: 7px 0;
+  position: absolute;
+  pointer-events: none;
+  top: 0;
+  bottom: 0;
+  text-align: center;
+  right: 0;
+}
+
+
+.ui-dropdown-2 {
+  margin: 50px auto;
+  position: relative;
+  width: 300px;
+}
+.ui-dropdown-2:before {
+  content: 'Select Column for Prediction';
+  position: absolute;
+  top: -25px;
+  left: 0;
+  font-size: 20px;
+}
+.ui-dropdown-2:after {
+  background-color: #369;
+  -moz-border-radius: 0 3px 3px 0;
+  border-radius: 0 3px 3px 0;
+  color: #fff;
+  content: '▼';
+  display: block;
+  font-size: 10px;
+  width: 25px;
+  padding: 7px 0;
+  position: absolute;
+  pointer-events: none;
+  top: 0;
+  bottom: 0;
+  text-align: center;
+  right: 0;
+}
+
+
+
+.ui-dropdown-3 {
+  margin: 50px auto;
+  position: relative;
+  width: 300px;
+}
+.ui-dropdown-3:before {
+  content: 'Select Column for Date';
+  position: absolute;
+  top: -25px;
+  left: 0;
+  font-size: 20px;
+}
+.ui-dropdown-3:after {
+  background-color: #369;
+  -moz-border-radius: 0 3px 3px 0;
+  border-radius: 0 3px 3px 0;
+  color: #fff;
+  content: '▼';
+  display: block;
+  font-size: 10px;
+  width: 25px;
+  padding: 7px 0;
+  position: absolute;
+  pointer-events: none;
+  top: 0;
+  bottom: 0;
+  text-align: center;
+  right: 0;
+}
+
+
+.submitBtn{
+    width: 100px;
+    padding: 6px;
+    margin: 20px;
+    float: right;
+}
+	</style>
+</head>
+<body>
+
+    <section class="mainWrapper">
+        <div class="requirements">
+           <h1>Requirements</h1>
+           <ul>
+            <li>File size is less than 10MB</li>
+            <li>File has minimum 5 columns</li>
+            <li>First row has column names</li>
+          </ul>
+        </div>
+        <div class="file-upload">
+    
+                <div class="image-upload-wrap">
+                    <h3>Select the time-period for your data. It can be daily,weekly,monthly or yearly. Also
+                      select the Forecasting column name and Date column name as present in your csv/xlsx file.
+                    </h3>
+                    <form action="/prediction_process" method="post" id="inputForm">
+                        <div class='ui-dropdown'>
+                            <select name="time_period" required>
+                              <option value="day">Day</option>
+                              <option value="week">Week</option>
+                              <option value="month">Month</option>
+                              <option value="year">Year</option>
+                            </select>  
+                        </div>
+                        <br>
+                        <div class='ui-dropdown-2'>
+                            <select name="forecasting_column" id="forecasting_column" required>
+                              {%for i in columns%}
+                                <option value="{{i}}">{{i}}</option>
+                              {%endfor%}
+                            </select>  
+                        </div>
+                        <br>
+                        <div class='ui-dropdown-3'>
+                          <select name="date_column" id="date_column" required>
+                            {%for i in columns%}
+                              <option value="{{i}}">{{i}}</option>
+                            {%endfor%}
+                          </select>  
+                        </div>
+                        <div>
+                          <label>Enter Number of Days/Weeks/Month/Year for future prediction</label>
+                          <input type="number" name="future_units" min="1" max="12" required>
+                        </div>
+                        <input type="submit" class="submitBtn" value="NEXT">
+                      </form>
+                </div>
+        </div>
+
+        <div class="imgBox">
+          <img src="../static/assets/images/user.svg">
+
+        </div>
+
+    </section>
+
+    <script type="text/javascript">
+
+      function F_Submit(e){
+        e.preventDefault()
+
+        forecast_col = document.getElementById("forecasting_column")
+        date_col = document.getElementById("date_column")
+        if(forecast_col.value == "")
+        {
+          alert("Kindly select forecast column")
+        }
+        else if(date_col.value==""){
+          alert("Kindly select date column")
+        }
+        else if(forecast_col.value==date_col.value){
+          alert("Forecast column cannot be same as Date column")
+        }
+        else{
+          document.getElementById("inputForm").submit()
+        }
+
+
+      }
+
+      let form = document.getElementById("inputForm")
+      form.addEventListener('submit', F_Submit);
+
+    </script>
+</body>
+</html>
