@@ -1,3 +1,4 @@
+from tkinter.tix import InputOnly
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -6,7 +7,6 @@ import time
 from darts import TimeSeries
 from darts.models import KalmanFilter
 from darts.utils import timeseries_generation as tg
-from sklearn.gaussian_process.kernels import ExpSineSquared, RBF
 from darts.metrics import mape
 from darts.models import NBEATSModel
 from darts.dataprocessing.transformers import Scaler, MissingValuesFiller
@@ -50,8 +50,10 @@ def kalman_filter(df,forecasting_col,date_col,start_date,type):
         KF.fit(target)
         clean = KF.filter(target)
         clean = clean.pd_dataframe()
-        df[forecasting_col] = clean[forecasting_col].values
-        return df
+        df_new = pd.DataFrame()
+        df_new[forecasting_col] = clean[forecasting_col].values
+        df_new[date_col] = dates[0:len(df[forecasting_col])]
+        return df_new
     except Exception as e:
         print("freq error")
         print(e)
@@ -71,11 +73,13 @@ def kalman_filter(df,forecasting_col,date_col,start_date,type):
     
 
 def nbeats_v1_model(df,forecasting_col):
-    target = df[[forecasting_col]]
+    target = df
     limit = int((85/100) * len(target))
 
     train = target.iloc[0:limit]
     val = target.iloc[limit:]
+
+    
 
     train = TimeSeries.from_dataframe(train)
     val = TimeSeries.from_dataframe(val)
@@ -91,7 +95,8 @@ def nbeats_v1_model(df,forecasting_col):
     n_epochs=10,
     nr_epochs_val_period=1,
     batch_size=5,
-    model_name="nbeats_interpretable_run",)
+    model_name="nbeats_interpretable_run",
+    )
 
     model_nbeats.fit(series=train, val_series=val, verbose=True)
 
@@ -101,6 +106,18 @@ def nbeats_v1_model(df,forecasting_col):
     limit_before_append = len(df[forecasting_col])
     x = df[forecasting_col].append(future[forecasting_col],ignore_index=True)
     future_series = TimeSeries.from_series(x)
+
+    pred_series = model_nbeats.historical_forecasts(
+    future_series,
+    start=limit_before_append,
+    retrain=False,
+    verbose=True,
+    )
+    print("Mape : ----------------------")
+    print(len(pred_series))
+    print(len(val))
+    print(mape(pred_series,val))
+    print("\n\n")
 
 def nbeats_v2_model():
     pass
@@ -114,12 +131,14 @@ def start(df,forecasting_col,date_col,type,future_units):
     try:
         df = clean_parse_data(df,forecasting_col,date_col)
         start_date = df[date_col].iat[0]
-        df = kalman_filter(df,forecasting_col,date_col,start_date,type)
-        end_date = df[date_col].iat[-1] 
-        # train , test = train_test_split(df)
+        new_df = kalman_filter(df,forecasting_col,date_col,start_date,type)
+        # end_date = df[date_col].iat[-1] 
+        new_df.set_index(date_col,inplace=True)
+        nbeats_v1_model(new_df,forecasting_col)
 
         return "good"
 
     except Exception as e:
+        print(e)
         return None
 
