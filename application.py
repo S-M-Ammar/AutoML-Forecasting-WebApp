@@ -60,7 +60,7 @@ def start_prediction_process():
         global_params['date_column'] = request.form['date_column']
         global_params['future_units'] = int(request.form['future_units'])
         global_params['time_period'] = request.form['time_period']
-        # print(df[request.form['forecasting_column']])
+        
         result = start(global_params['data'],global_params['forecasting_column'],global_params['date_column'],global_params['time_period'],global_params['future_units'])
         if(result==None):
             return render_template("error.html")    
