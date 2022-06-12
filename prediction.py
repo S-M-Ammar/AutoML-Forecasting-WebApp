@@ -1,4 +1,3 @@
-from tkinter.tix import InputOnly
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,14 +8,18 @@ from darts.models import KalmanFilter
 from darts.utils import timeseries_generation as tg
 from darts.metrics import mape
 from darts.models import NBEATSModel
+from sklearn.metrics import r2_score
 from darts.dataprocessing.transformers import Scaler, MissingValuesFiller
-from darts.metrics import mape, r2_score
+from sklearn.metrics import mean_absolute_error
 import xgboost as xgb
 from xgboost import plot_importance, plot_tree
 from sklearn.metrics import mean_absolute_error
 from sklearn.preprocessing import MinMaxScaler
 
 Queue = [] # for the threading purpose
+
+def mape(actual,pred):
+    return np.mean(np.abs((actual - pred) / actual)) * 100
 
 def clean_parse_data(df,forecasting_col,date_col):
     try:
@@ -68,21 +71,78 @@ def kalman_filter(df,forecasting_col,date_col,start_date,type):
 
 def nbeats_v1_model(df,forecasting_col):
     target = df
-    limit = int((85/100) * len(target))
+    limit = int((80/100) * len(target))
 
     train = target.iloc[0:limit]
     val = target.iloc[limit:]
 
+    train = TimeSeries.from_dataframe(train)
+    val = TimeSeries.from_dataframe(val)
+
+    model_nbeats = NBEATSModel(
+    input_chunk_length=2,
+    output_chunk_length=1,
+    generic_architecture=True,
+    num_stacks=10,
+    num_blocks=3,
+    num_layers=4,
+    layer_widths=512,
+    n_epochs=10,
+    nr_epochs_val_period=1,
+    batch_size=2,
+    model_name="nbeats_interpretable_run",
+    )
+
+    model_nbeats.fit(series=train, val_series=val, verbose=True)
+
+    future = pd.DataFrame()
+    future[forecasting_col] = df[forecasting_col].to_list()[0:limit]
     
+    start_limit = len(future)
+
+    end_limit = len(df)
+    end_limit_flag = False
+    if(end_limit>14):
+        end_limit_flag = True
+        end_limit = start_limit + 14
+
+    remaning_values = [0 for x in range(start_limit,end_limit)]
+    remaning_data_frame = pd.DataFrame()
+    remaning_data_frame[forecasting_col] = remaning_values
+
+    future = future.append(remaning_data_frame,ignore_index=True)
+
+    future_series = TimeSeries.from_series(future)
+
+    pred_series = model_nbeats.historical_forecasts(
+    future_series,
+    start=start_limit,
+    retrain=False,
+    verbose=True,)
+
+    pred_array = np.absolute(pred_series.univariate_values())
+    val_array = np.absolute(val.univariate_values())
+    if(end_limit_flag==True):
+        val_array = val_array[0:14]
+    error = mean_absolute_error(pred_array,val_array)
+    Queue.append(("n_beats_v1",error))
+
+
+def nbeats_v2_model(df,forecasting_col):
+    target = df
+    limit = int((80/100) * len(target))
+
+    train = target.iloc[0:limit]
+    val = target.iloc[limit:]
 
     train = TimeSeries.from_dataframe(train)
     val = TimeSeries.from_dataframe(val)
-    series = TimeSeries.from_dataframe(target)
 
     model_nbeats = NBEATSModel(
-    input_chunk_length=3,
-    output_chunk_length=1,
+    input_chunk_length=5,
+    output_chunk_length=2,
     generic_architecture=True,
+    num_stacks=10,
     num_blocks=3,
     num_layers=4,
     layer_widths=512,
@@ -94,71 +154,38 @@ def nbeats_v1_model(df,forecasting_col):
 
     model_nbeats.fit(series=train, val_series=val, verbose=True)
 
-    future_Total = [0 for x in range(0,len(val))]
     future = pd.DataFrame()
-    future[forecasting_col] = future_Total
-    limit_before_append = len(df[forecasting_col])
-    x = df[forecasting_col].append(future[forecasting_col],ignore_index=True)
-    future_series = TimeSeries.from_series(x)
+    future[forecasting_col] = df[forecasting_col].to_list()[0:limit]
+    
+    start_limit = len(future)
+
+    end_limit = len(df)
+    end_limit_flag = False
+    if(end_limit>14):
+        end_limit_flag = True
+        end_limit = start_limit + 14
+
+    remaning_values = [0 for x in range(start_limit,end_limit)]
+    remaning_data_frame = pd.DataFrame()
+    remaning_data_frame[forecasting_col] = remaning_values
+
+    future = future.append(remaning_data_frame,ignore_index=True)
+
+    future_series = TimeSeries.from_series(future)
 
     pred_series = model_nbeats.historical_forecasts(
     future_series,
-    start=limit_before_append,
+    start=start_limit,
     retrain=False,
-    verbose=True,
-    )
-    print("Mape : ----------------------")
-    print(len(pred_series))
-    print(len(val))
-    # print(mape(pred_series,val))
-    # print("\n\n")
+    verbose=True,)
 
-def nbeats_v2_model(df,forecasting_col):
-    target = df
-    print(target.head(10))
-    limit = int((70/100) * len(target))
-
-    train = target.iloc[0:limit]
-    val = target.iloc[limit:]
-
-    train = TimeSeries.from_dataframe(train)
-    val = TimeSeries.from_dataframe(val)
-    series = TimeSeries.from_dataframe(target)
-
-    model_nbeats = NBEATSModel(
-    input_chunk_length=15,
-    output_chunk_length=7,
-    generic_architecture=False,
-    num_blocks=3,
-    num_layers=4,
-    layer_widths=512,
-    n_epochs=50,
-    nr_epochs_val_period=1,
-    batch_size=2,
-    model_name="nbeats_interpretable_run",
-)
-
-    model_nbeats.fit(series=train, val_series=val, verbose=True)
-
-    future_Total = [0 for x in range(0,len(val))]
-    future = pd.DataFrame()
-    future[forecasting_col] = future_Total
-    limit_before_append = len(df[forecasting_col])
-    x = df[forecasting_col].append(future[forecasting_col],ignore_index=True)
-    future_series = TimeSeries.from_series(x)
-
-    pred_series = model_nbeats.historical_forecasts(
-    future_series,
-    start=limit_before_append,
-    retrain=False,
-    verbose=True,
-    )
-    print("Mape : ----------------------")
-    print(len(pred_series))
-    print(len(val))
-    print(mape(pred_series,val))
-    print("\n\n")
-    # Queue.append((model,mape,"nbeats_v2"))
+  
+    pred_array = np.absolute(pred_series.univariate_values())
+    val_array = np.absolute(val.univariate_values())
+    if(end_limit_flag==True):
+        val_array = val_array[0:14]
+    error = mean_absolute_error(pred_array,val_array)
+    Queue.append(("n_beats_v2",error))
 
 def xgboost_model(df,forecasting_col,date_col):
 
@@ -223,13 +250,9 @@ def xgboost_model(df,forecasting_col,date_col):
 
     preds= reg.predict(test_X_data)
     true_ = test_Y_data[forecasting_col]
-    Mape = (np.abs((true_ - preds))) /  true_ 
-    Mape = Mape * 100
-    Mape = np.sum(Mape) / len(preds)
+    error = mean_absolute_error(preds,true_)
 
-    print("MAPE = ",Mape)
-
-    Queue.append(("xgboost",reg,Mape))
+    Queue.append(("xgboost",error))
 
 def fourth_model():
 
@@ -245,8 +268,17 @@ def start(df,forecasting_col,date_col,type,future_units):
         new_df.set_index(date_col,inplace=True)
         # imply threading here...
 
-        nbeats_v2_model(new_df,forecasting_col)
-        # xgboost_model(new_df,forecasting_col,date_col)
+        t1 = threading.Thread(target=xgboost_model, args=(new_df.copy(),forecasting_col,date_col,))
+        t2 = threading.Thread(target=nbeats_v2_model, args=(new_df.copy(),forecasting_col))
+        t3 = threading.Thread(target=nbeats_v1_model, args=(new_df.copy(),forecasting_col,))
+        t1.start()
+        t2.start()
+        t1.join()
+        t2.join()
+        t3.start()
+        t3.join()
+        print("---------------------------------------------------")
+        print(Queue)
 
         return "good"
 
@@ -256,3 +288,17 @@ def start(df,forecasting_col,date_col,type,future_units):
 
 
 
+
+
+# model_nbeats = NBEATSModel(
+#     input_chunk_length=15,
+#     output_chunk_length=7,
+#     generic_architecture=False,
+#     num_blocks=3,
+#     num_layers=4,
+#     layer_widths=512,
+#     n_epochs=50,
+#     nr_epochs_val_period=1,
+#     batch_size=2,
+#     model_name="nbeats_interpretable_run",
+# )
