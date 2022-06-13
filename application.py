@@ -64,7 +64,8 @@ def start_prediction_process():
         result = start(global_params['data'],global_params['forecasting_column'],global_params['date_column'],global_params['time_period'],global_params['future_units'])
         if(result==None):
             return render_template("error.html")    
-        return "Done"
+        
+        return render_template("analytics.html")
     except Exception as e:
         print(e)
         return render_template("error.html")

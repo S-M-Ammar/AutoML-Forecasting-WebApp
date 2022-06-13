@@ -145,7 +145,7 @@ def nbeats_v2_model(df,forecasting_col):
     model_nbeats = NBEATSModel(
     input_chunk_length=5,
     output_chunk_length=2,
-    generic_architecture=True,
+    generic_architecture=False,
     num_stacks=10,
     num_blocks=3,
     num_layers=4,
@@ -271,9 +271,9 @@ def start(df,forecasting_col,date_col,type,future_units):
         df = clean_parse_data(df,forecasting_col,date_col)
         start_date = df[date_col].iat[0]
         new_df = kalman_filter(df,forecasting_col,date_col,start_date,type)
-        # end_date = df[date_col].iat[-1] 
+        end_date = df[date_col].iat[-1] 
         new_df.set_index(date_col,inplace=True)
-        nbeats_v1_model_full(new_df,forecasting_col)
+       
         # imply threading here...
 
         # t1 = threading.Thread(target=xgboost_model, args=(new_df.copy(),forecasting_col,date_col,))
@@ -291,6 +291,9 @@ def start(df,forecasting_col,date_col,type,future_units):
         # for x in Queue:
         #     print(x)
 
+        prediction = nbeats_v1_model_full(new_df,forecasting_col,future_units)
+        future_dates = None
+        
         
         return "good"
 

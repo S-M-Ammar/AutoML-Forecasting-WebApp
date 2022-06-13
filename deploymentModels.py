@@ -17,7 +17,7 @@ from sklearn.metrics import mean_absolute_error
 from sklearn.preprocessing import MinMaxScaler
 
 
-def nbeats_v1_model_full(df,forecasting_col):
+def nbeats_v1_model_full(df,forecasting_col,future_limit):
     print("Nbeats_v1 Stars....")
     target = df
     limit = len(target)
@@ -42,14 +42,14 @@ def nbeats_v1_model_full(df,forecasting_col):
     model_name="nbeats_interpretable_run",
     )
 
-    model_nbeats.fit(series=train, verbose=True)
+    model_nbeats.fit(series=train, verbose=False)
 
     future = pd.DataFrame()
     future[forecasting_col] = df[forecasting_col].to_list()
 
     
     start_limit = len(future)
-    end_limit = start_limit + 14
+    end_limit = start_limit + future_limit
 
     remaning_values = [0 for x in range(start_limit,end_limit)]
     remaning_data_frame = pd.DataFrame()
@@ -66,10 +66,58 @@ def nbeats_v1_model_full(df,forecasting_col):
     verbose=False,)
 
     pred_array = np.absolute(pred_series.univariate_values())
-    print(pred_array)
-    # val_array = np.absolute(val.univariate_values())
-    # if(end_limit_flag==True):
-    #     val_array = val_array[0:14]
-    # error = mean_absolute_error(pred_array,val_array)
-    # print("Nbeats_v1 Ends....")
+    return pred_array
+  
+
+
+def nbeats_v2_model_full(df,forecasting_col,future_limit):
+    print("Nbeats_v1 Stars....")
+    target = df
+    limit = len(target)
+
+    train = target
+    val = target
+
+    train = TimeSeries.from_dataframe(train)
+    val = TimeSeries.from_dataframe(val)
+
+    model_nbeats = NBEATSModel(
+    input_chunk_length=5,
+    output_chunk_length=2,
+    generic_architecture=False,
+    num_stacks=10,
+    num_blocks=3,
+    num_layers=4,
+    layer_widths=512,
+    n_epochs=50,
+    nr_epochs_val_period=1,
+    batch_size=5,
+    model_name="nbeats_interpretable_run",
+    )
+
+    model_nbeats.fit(series=train, verbose=False)
+
+    future = pd.DataFrame()
+    future[forecasting_col] = df[forecasting_col].to_list()
+
+    
+    start_limit = len(future)
+    end_limit = start_limit + future_limit
+
+    remaning_values = [0 for x in range(start_limit,end_limit)]
+    remaning_data_frame = pd.DataFrame()
+    remaning_data_frame[forecasting_col] = remaning_values
+
+    future = future.append(remaning_data_frame,ignore_index=True)
+
+    future_series = TimeSeries.from_series(future)
+
+    pred_series = model_nbeats.historical_forecasts(
+    future_series,
+    start=start_limit,
+    retrain=False,
+    verbose=False,)
+
+    pred_array = np.absolute(pred_series.univariate_values())
+    return pred_array
 
