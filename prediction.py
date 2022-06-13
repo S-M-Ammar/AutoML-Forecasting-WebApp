@@ -15,6 +15,7 @@ import xgboost as xgb
 from xgboost import plot_importance, plot_tree
 from sklearn.metrics import mean_absolute_error
 from sklearn.preprocessing import MinMaxScaler
+from deploymentModels import nbeats_v1_model_full
 
 Queue = [] # for the threading purpose
 
@@ -70,6 +71,7 @@ def kalman_filter(df,forecasting_col,date_col,start_date,type):
     
 
 def nbeats_v1_model(df,forecasting_col):
+    print("Nbeats_v1 Stars....")
     target = df
     limit = int((80/100) * len(target))
 
@@ -87,7 +89,7 @@ def nbeats_v1_model(df,forecasting_col):
     num_blocks=3,
     num_layers=4,
     layer_widths=512,
-    n_epochs=10,
+    n_epochs=50,
     nr_epochs_val_period=1,
     batch_size=2,
     model_name="nbeats_interpretable_run",
@@ -118,7 +120,7 @@ def nbeats_v1_model(df,forecasting_col):
     future_series,
     start=start_limit,
     retrain=False,
-    verbose=True,)
+    verbose=False,)
 
     pred_array = np.absolute(pred_series.univariate_values())
     val_array = np.absolute(val.univariate_values())
@@ -126,9 +128,11 @@ def nbeats_v1_model(df,forecasting_col):
         val_array = val_array[0:14]
     error = mean_absolute_error(pred_array,val_array)
     Queue.append(("n_beats_v1",error))
+    print("Nbeats_v1 Ends....")
 
 
 def nbeats_v2_model(df,forecasting_col):
+    print("Nbeats_v2 Starts....")
     target = df
     limit = int((80/100) * len(target))
 
@@ -146,7 +150,7 @@ def nbeats_v2_model(df,forecasting_col):
     num_blocks=3,
     num_layers=4,
     layer_widths=512,
-    n_epochs=10,
+    n_epochs=50,
     nr_epochs_val_period=1,
     batch_size=5,
     model_name="nbeats_interpretable_run",
@@ -177,7 +181,7 @@ def nbeats_v2_model(df,forecasting_col):
     future_series,
     start=start_limit,
     retrain=False,
-    verbose=True,)
+    verbose=False,)
 
   
     pred_array = np.absolute(pred_series.univariate_values())
@@ -186,9 +190,11 @@ def nbeats_v2_model(df,forecasting_col):
         val_array = val_array[0:14]
     error = mean_absolute_error(pred_array,val_array)
     Queue.append(("n_beats_v2",error))
+    print("Nbeats_v2 Ends....")
 
 def xgboost_model(df,forecasting_col,date_col):
 
+    print("Xgboost Starts....")
     reg = xgb.XGBRegressor(n_estimators=10000)
     df[forecasting_col] = df[forecasting_col].astype(float)
     df.reset_index(inplace=True)
@@ -253,6 +259,7 @@ def xgboost_model(df,forecasting_col,date_col):
     error = mean_absolute_error(preds,true_)
 
     Queue.append(("xgboost",error))
+    print("Xgboost Ends....")
 
 def fourth_model():
 
@@ -266,20 +273,25 @@ def start(df,forecasting_col,date_col,type,future_units):
         new_df = kalman_filter(df,forecasting_col,date_col,start_date,type)
         # end_date = df[date_col].iat[-1] 
         new_df.set_index(date_col,inplace=True)
+        nbeats_v1_model_full(new_df,forecasting_col)
         # imply threading here...
 
-        t1 = threading.Thread(target=xgboost_model, args=(new_df.copy(),forecasting_col,date_col,))
-        t2 = threading.Thread(target=nbeats_v2_model, args=(new_df.copy(),forecasting_col))
-        t3 = threading.Thread(target=nbeats_v1_model, args=(new_df.copy(),forecasting_col,))
-        t1.start()
-        t2.start()
-        t1.join()
-        t2.join()
-        t3.start()
-        t3.join()
+        # t1 = threading.Thread(target=xgboost_model, args=(new_df.copy(),forecasting_col,date_col,))
+        # t2 = threading.Thread(target=nbeats_v2_model, args=(new_df.copy(),forecasting_col))
+        # t3 = threading.Thread(target=nbeats_v1_model, args=(new_df.copy(),forecasting_col,))
+        # t1.start()
+        # t2.start()
+        # t1.join()
+        # t2.join()
+        # t3.start()
+        # t3.join()
         print("---------------------------------------------------")
-        print(Queue)
+        
+        # winner_candidate = None
+        # for x in Queue:
+        #     print(x)
 
+        
         return "good"
 
     except Exception as e:
