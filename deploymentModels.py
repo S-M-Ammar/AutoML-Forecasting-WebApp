@@ -20,7 +20,6 @@ from sklearn.preprocessing import MinMaxScaler
 def nbeats_v1_model_full(df,forecasting_col,future_limit):
     print("Nbeats_v1 Stars....")
     target = df
-    limit = len(target)
 
     train = target
     val = target
@@ -95,7 +94,7 @@ def nbeats_v2_model_full(df,forecasting_col,future_limit):
     model_name="nbeats_interpretable_run",
     )
 
-    model_nbeats.fit(series=train, verbose=False)
+    model_nbeats.fit(series=train, verbose=True)
 
     future = pd.DataFrame()
     future[forecasting_col] = df[forecasting_col].to_list()

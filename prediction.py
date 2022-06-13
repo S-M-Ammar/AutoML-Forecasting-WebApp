@@ -15,7 +15,7 @@ import xgboost as xgb
 from xgboost import plot_importance, plot_tree
 from sklearn.metrics import mean_absolute_error
 from sklearn.preprocessing import MinMaxScaler
-from deploymentModels import nbeats_v1_model_full
+from deploymentModels import nbeats_v1_model_full , nbeats_v2_model_full
 
 Queue = [] # for the threading purpose
 
@@ -291,15 +291,25 @@ def start(df,forecasting_col,date_col,type,future_units):
         # for x in Queue:
         #     print(x)
 
-        prediction = nbeats_v1_model_full(new_df,forecasting_col,future_units)
+        prediction = nbeats_v2_model_full(new_df,forecasting_col,future_units)
         future_dates = None
+        if(type=='day'):
+            future_dates = pd.date_range(start=str(end_date), periods=future_units)
+        elif(type=='week'):
+            future_dates = pd.date_range(start=str(end_date), periods=future_units,freq="W")
+        elif(type=='month'):
+            future_dates = pd.date_range(start=str(end_date), periods=future_units,freq="M")
+        elif(type=='year'):
+            future_dates = pd.date_range(start=str(end_date), periods=future_units,freq="Y")
         
-        
-        return "good"
+        future_dates_str = [str(x) for x in future_dates]
+        print(prediction)
+        print(future_dates_str)
+        return prediction , future_dates_str
 
     except Exception as e:
         print(e)
-        return None
+        return [] , []
 
 
 

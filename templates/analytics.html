@@ -287,16 +287,16 @@
             },
             title: {
                 display: true,
-                text: 'Chart.js Line Chart - Legend'
+                text: 'Forecasting Results'
             }
         };
     
         // Chart Data
         var chartData = {
-            labels: ["January", "February", "March", "April", "May", "June", "July"],
+            labels: ['2022-01-30 00:00:00', '2022-01-31 00:00:00', '2022-02-01 00:00:00', '2022-02-02 00:00:00', '2022-02-03 00:00:00'],
             datasets: [{
-                label: "My First dataset",
-                data: [65, 59, 80, 81, 56, 55, 40],
+                label: "Predictions",
+                data: {{result}},
                 fill: false,
                 borderDash: [5, 5],
                 borderColor: "#9C27B0",

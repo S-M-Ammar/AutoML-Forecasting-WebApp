@@ -61,11 +61,13 @@ def start_prediction_process():
         global_params['future_units'] = int(request.form['future_units'])
         global_params['time_period'] = request.form['time_period']
         
-        result = start(global_params['data'],global_params['forecasting_column'],global_params['date_column'],global_params['time_period'],global_params['future_units'])
-        if(result==None):
+        result,future_dates = start(global_params['data'],global_params['forecasting_column'],global_params['date_column'],global_params['time_period'],global_params['future_units'])
+        if(len(result)==0):
             return render_template("error.html")    
         
-        return render_template("analytics.html")
+        print(type(result))
+        print(type(future_dates))
+        return render_template("analytics.html",result=result.tolist(),future_dates=future_dates)
     except Exception as e:
         print(e)
         return render_template("error.html")
