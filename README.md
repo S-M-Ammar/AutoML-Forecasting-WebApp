@@ -25,7 +25,7 @@ after downloading, you only need to follow the prompts to install it step by ste
 
 
 ## Step three
-pip install jupyter notebook
+### pip install jupyter notebook
 
 
 ## Running the Project
