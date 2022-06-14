@@ -15,7 +15,7 @@ import xgboost as xgb
 from xgboost import plot_importance, plot_tree
 from sklearn.metrics import mean_absolute_error
 from sklearn.preprocessing import MinMaxScaler
-from deploymentModels import nbeats_v1_model_full , nbeats_v2_model_full
+from deploymentModels import nbeats_v1_model_full , nbeats_v2_model_full ,xgboost_model_full
 
 Queue = [] # for the threading purpose
 
@@ -30,8 +30,7 @@ def clean_parse_data(df,forecasting_col,date_col):
         df = df[[date_col,forecasting_col]]
         df[date_col] = pd.to_datetime(df[date_col])
         return df
-        # start_date = DateProcessing[date_column_name].iat[0]
-        # end_date = df[date_col].iat[-1]
+        
     except Exception as e:
         print("Here we go 1")
         print(e)
@@ -224,6 +223,7 @@ def xgboost_model(df,forecasting_col,date_col):
     scaler_9 = MinMaxScaler()
     scaler_10 = MinMaxScaler()
     scaler_11 = MinMaxScaler()
+    scaler_12 = MinMaxScaler()
 
     df['dayofweek'] = scaler_0.fit_transform(df[['dayofweek']])
     df['quarter'] = scaler_1.fit_transform(df[['quarter']])
@@ -234,14 +234,12 @@ def xgboost_model(df,forecasting_col,date_col):
     df['weekofyear'] = scaler_6.fit_transform(df[['weekofyear']])
     df['week']  =  scaler_7.fit_transform(df[['week']])
     df['weekday'] = scaler_8.fit_transform(df[['weekday']])
-    df['daysInMonth'] = scaler_8.fit_transform(df[['daysInMonth']])
-    df['is_quater_start'] = scaler_9.fit_transform(df[['is_quater_start']])
-    df['is_quater_end'] = scaler_10.fit_transform(df[['is_quater_end']])
-    df['is_leap_year'] = scaler_11.fit_transform(df[['is_leap_year']])
+    df['daysInMonth'] = scaler_9.fit_transform(df[['daysInMonth']])
+    df['is_quater_start'] = scaler_10.fit_transform(df[['is_quater_start']])
+    df['is_quater_end'] = scaler_11.fit_transform(df[['is_quater_end']])
+    df['is_leap_year'] = scaler_12.fit_transform(df[['is_leap_year']])
 
     limit = int((85/100) * len(df[forecasting_col]))
-
-    test_date = df[[date_col]]
 
     train_X_data = df[['dayofweek','dayofyear','dayofmonth','weekofyear','week','weekday','daysInMonth','is_leap_year']].iloc[0:limit,:]
     train_Y_data = df[[forecasting_col]].iloc[0:limit,:]
@@ -252,7 +250,7 @@ def xgboost_model(df,forecasting_col,date_col):
     reg.fit(train_X_data, train_Y_data,
         eval_set=[(train_X_data, train_Y_data)],
         early_stopping_rounds=1000,
-        verbose=False)
+        verbose=True)
 
     preds= reg.predict(test_X_data)
     true_ = test_Y_data[forecasting_col]
@@ -276,22 +274,35 @@ def start(df,forecasting_col,date_col,type,future_units):
        
         # imply threading here...
 
-        # t1 = threading.Thread(target=xgboost_model, args=(new_df.copy(),forecasting_col,date_col,))
-        # t2 = threading.Thread(target=nbeats_v2_model, args=(new_df.copy(),forecasting_col))
-        # t3 = threading.Thread(target=nbeats_v1_model, args=(new_df.copy(),forecasting_col,))
-        # t1.start()
-        # t2.start()
-        # t1.join()
-        # t2.join()
-        # t3.start()
-        # t3.join()
-        print("---------------------------------------------------")
+        t1 = threading.Thread(target=xgboost_model, args=(new_df.copy(),forecasting_col,date_col,))
+        t2 = threading.Thread(target=nbeats_v2_model, args=(new_df.copy(),forecasting_col))
+        t3 = threading.Thread(target=nbeats_v1_model, args=(new_df.copy(),forecasting_col,))
+        t1.start()
+        t2.start()
+        t1.join()
+        t2.join()
+        t3.start()
+        t3.join()
+        print("----------------Models Training Done -----------------------------------")
         
-        # winner_candidate = None
-        # for x in Queue:
-        #     print(x)
+        winner_candidate = Queue[0][0]
+        threshold = Queue[0][1]
+        for x in Queue:
+            if(x[1]<threshold):
+                winner_candidate = x[0]
+                threshold = x[1]
 
-        prediction = nbeats_v2_model_full(new_df,forecasting_col,future_units)
+        
+
+        prediction = None
+        if(winner_candidate=="xgboost"):
+            prediction = xgboost_model_full(df,forecasting_col,date_col,future_units,type,end_date)
+        elif(winner_candidate=="n_beats_v1"):
+            prediction = nbeats_v1_model_full(new_df,forecasting_col,future_units)
+        elif(winner_candidate=="n_beats_v2"):
+            prediction = nbeats_v2_model_full(new_df,forecasting_col,future_units)
+
+      
         future_dates = None
         if(type=='day'):
             future_dates = pd.date_range(start=str(end_date), periods=future_units)
@@ -303,9 +314,7 @@ def start(df,forecasting_col,date_col,type,future_units):
             future_dates = pd.date_range(start=str(end_date), periods=future_units,freq="Y")
         
         future_dates_str = [str(x) for x in future_dates]
-        print(prediction)
-        print(future_dates_str)
-        return prediction , future_dates_str
+        return np.absolute(prediction), future_dates_str
 
     except Exception as e:
         print(e)
@@ -314,16 +323,3 @@ def start(df,forecasting_col,date_col,type,future_units):
 
 
 
-
-# model_nbeats = NBEATSModel(
-#     input_chunk_length=15,
-#     output_chunk_length=7,
-#     generic_architecture=False,
-#     num_blocks=3,
-#     num_layers=4,
-#     layer_widths=512,
-#     n_epochs=50,
-#     nr_epochs_val_period=1,
-#     batch_size=2,
-#     model_name="nbeats_interpretable_run",
-# )
