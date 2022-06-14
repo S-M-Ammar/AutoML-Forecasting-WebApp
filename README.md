@@ -1,4 +1,8 @@
 # AutoML-Forecasting-WebApp
+
+## Reference for installation
+## https://www.codestudyblog.com/cs2112pyc/1221135418.html
+
 ## The first step
 
 if there is anaconda, in the computer, then you can proceed to the second step directly. 。
@@ -10,7 +14,7 @@ extraction code ：swvy
 after downloading, you only need to follow the prompts to install it step by step.
 
 ## Step two
-the second step is the most important. i have tried a variety of methods to report errors before. ， finally, i created a virtual environment and installed it in anaconda. darts the following is the complete installation code ， mainly in anaconda Powershell Prompt or anaconda. Prompt i installed it in the former ， open powershell, and enter the following code ：
+The second step is the most important. i have tried a variety of methods to report errors before. ， finally, i created a virtual environment and installed it in anaconda. darts the following is the complete installation code ， mainly in anaconda Powershell Prompt or anaconda. Prompt i installed it in the former ， open powershell, and enter the following code ：
 conda create --name darts python=3.7
 the purpose of the above code is to create a virtual environment called darts ， next, we need to install the various libraries required by the library darts in this virtual environment. 。
 conda activate darts
