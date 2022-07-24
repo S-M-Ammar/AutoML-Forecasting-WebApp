@@ -1,3 +1,4 @@
+from hashlib import new
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,7 +8,7 @@ from darts import TimeSeries
 from darts.models import KalmanFilter
 from darts.utils import timeseries_generation as tg
 from darts.metrics import mape
-from darts.models import NBEATSModel
+from darts.models import NBEATSModel,TransformerModel
 from sklearn.metrics import r2_score
 from darts.dataprocessing.transformers import Scaler, MissingValuesFiller
 from sklearn.metrics import mean_absolute_error
@@ -15,7 +16,7 @@ import xgboost as xgb
 from xgboost import plot_importance, plot_tree
 from sklearn.metrics import mean_absolute_error
 from sklearn.preprocessing import MinMaxScaler
-from deploymentModels import nbeats_v1_model_full , nbeats_v2_model_full ,xgboost_model_full
+from deploymentModels import nbeats_v2_model_full ,xgboost_model_full ,transformers_model_full
 
 Queue = [] # for the threading purpose
 
@@ -65,12 +66,8 @@ def kalman_filter(df,forecasting_col,date_col,start_date,type):
         print("freq error")
         print(e)
         return None
-
-
-    
-
-def nbeats_v1_model(df,forecasting_col):
-    print("Nbeats_v1 Stars....")
+   
+def transformers_model(df,forecasting_col):
     target = df
     limit = int((80/100) * len(target))
 
@@ -80,21 +77,26 @@ def nbeats_v1_model(df,forecasting_col):
     train = TimeSeries.from_dataframe(train)
     val = TimeSeries.from_dataframe(val)
 
-    model_nbeats = NBEATSModel(
-    input_chunk_length=2,
-    output_chunk_length=1,
-    generic_architecture=True,
-    num_stacks=10,
-    num_blocks=3,
-    num_layers=4,
-    layer_widths=512,
-    n_epochs=50,
-    nr_epochs_val_period=1,
-    batch_size=2,
-    model_name="nbeats_interpretable_run",
-    )
 
-    model_nbeats.fit(series=train, val_series=val, verbose=True)
+    model = TransformerModel(
+            input_chunk_length=12,
+            output_chunk_length=1,
+            batch_size=4,
+            n_epochs=100,
+            model_name="transformer",
+            nr_epochs_val_period=10,
+            d_model=16,
+            nhead=2,
+            num_encoder_layers=10,
+            num_decoder_layers=10,
+            dim_feedforward=128,
+            dropout=0.5,
+            activation="relu",
+            random_state=42,
+            save_checkpoints=True,
+            force_reset=True,)
+
+    model.fit(series=train, val_series=val, verbose=True)
 
     future = pd.DataFrame()
     future[forecasting_col] = df[forecasting_col].to_list()[0:limit]
@@ -115,7 +117,7 @@ def nbeats_v1_model(df,forecasting_col):
 
     future_series = TimeSeries.from_series(future)
 
-    pred_series = model_nbeats.historical_forecasts(
+    pred_series = model.historical_forecasts(
     future_series,
     start=start_limit,
     retrain=False,
@@ -125,10 +127,10 @@ def nbeats_v1_model(df,forecasting_col):
     val_array = np.absolute(val.univariate_values())
     if(end_limit_flag==True):
         val_array = val_array[0:14]
-    error = mean_absolute_error(pred_array,val_array)
-    Queue.append(("n_beats_v1",error))
-    print("Nbeats_v1 Ends....")
 
+    error = mean_absolute_error(pred_array,val_array)
+    Queue.append(("Transformers",error))
+    print("Transformers End....")
 
 def nbeats_v2_model(df,forecasting_col):
     print("Nbeats_v2 Starts....")
@@ -149,7 +151,7 @@ def nbeats_v2_model(df,forecasting_col):
     num_blocks=3,
     num_layers=4,
     layer_widths=512,
-    n_epochs=50,
+    n_epochs=100,
     nr_epochs_val_period=1,
     batch_size=5,
     model_name="nbeats_interpretable_run",
@@ -259,11 +261,6 @@ def xgboost_model(df,forecasting_col,date_col):
     Queue.append(("xgboost",error))
     print("Xgboost Ends....")
 
-def fourth_model():
-
-    pass
-
-
 def start(df,forecasting_col,date_col,type,future_units):
     try:
         df = clean_parse_data(df,forecasting_col,date_col)
@@ -271,37 +268,44 @@ def start(df,forecasting_col,date_col,type,future_units):
         new_df = kalman_filter(df,forecasting_col,date_col,start_date,type)
         end_date = df[date_col].iat[-1] 
         new_df.set_index(date_col,inplace=True)
-       
+
+        new_df = TimeSeries.from_dataframe(new_df)
+
+        scaler = Scaler()
+        df_scaled = scaler.fit_transform(new_df)
+        new_df = df_scaled.pd_dataframe()
+
+        # transformers_model(new_df,forecasting_col)
         # imply threading here...
 
-        t1 = threading.Thread(target=xgboost_model, args=(new_df.copy(),forecasting_col,date_col,))
-        t2 = threading.Thread(target=nbeats_v2_model, args=(new_df.copy(),forecasting_col))
-        t3 = threading.Thread(target=nbeats_v1_model, args=(new_df.copy(),forecasting_col,))
-        t1.start()
-        t2.start()
-        t1.join()
-        t2.join()
+        # t1 = threading.Thread(target=xgboost_model, args=(new_df.copy(),forecasting_col,date_col,))
+        # t2 = threading.Thread(target=nbeats_v2_model, args=(new_df.copy(),forecasting_col))
+        t3 = threading.Thread(target=transformers_model, args=(new_df.copy(),forecasting_col,))
+        # t1.start()
+        # t2.start()
         t3.start()
+        # t1.join()
+        # t2.join()
         t3.join()
-        print("----------------Models Training Done -----------------------------------")
-        
+        # print("----------------Models Training Done -----------------------------------")
+        print(Queue)
         winner_candidate = Queue[0][0]
         threshold = Queue[0][1]
         for x in Queue:
             if(x[1]<threshold):
                 winner_candidate = x[0]
                 threshold = x[1]
+        
 
         
 
         prediction = None
         if(winner_candidate=="xgboost"):
             prediction = xgboost_model_full(df,forecasting_col,date_col,future_units,type,end_date)
-        elif(winner_candidate=="n_beats_v1"):
-            prediction = nbeats_v1_model_full(new_df,forecasting_col,future_units)
         elif(winner_candidate=="n_beats_v2"):
             prediction = nbeats_v2_model_full(new_df,forecasting_col,future_units)
-
+        elif(winner_candidate=="Transformers"):
+            prediction = transformers_model_full(new_df,forecasting_col,future_units)
       
         future_dates = None
         if(type=='day'):
@@ -313,6 +317,10 @@ def start(df,forecasting_col,date_col,type,future_units):
         elif(type=='year'):
             future_dates = pd.date_range(start=str(end_date), periods=future_units,freq="Y")
         
+        
+        temp_df = pd.DataFrame(prediction)
+        reverse_scaled_prediction = scaler.inverse_transform(TimeSeries.from_dataframe(temp_df))
+        prediction = reverse_scaled_prediction.univariate_values()
         future_dates_str = [str(x) for x in future_dates]
         return np.absolute(prediction), future_dates_str
 

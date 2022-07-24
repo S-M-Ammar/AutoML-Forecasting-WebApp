@@ -7,7 +7,7 @@ from darts import TimeSeries
 from darts.models import KalmanFilter
 from darts.utils import timeseries_generation as tg
 from darts.metrics import mape
-from darts.models import NBEATSModel
+from darts.models import NBEATSModel,TransformerModel
 from sklearn.metrics import r2_score
 from darts.dataprocessing.transformers import Scaler, MissingValuesFiller
 from sklearn.metrics import mean_absolute_error
@@ -16,57 +16,6 @@ from xgboost import plot_importance, plot_tree
 from sklearn.metrics import mean_absolute_error
 from sklearn.preprocessing import MinMaxScaler
 
-
-def nbeats_v1_model_full(df,forecasting_col,future_limit):
-    print("Nbeats_v1 Stars....")
-    target = df
-
-    train = target
-    val = target
-
-    train = TimeSeries.from_dataframe(train)
-    val = TimeSeries.from_dataframe(val)
-
-    model_nbeats = NBEATSModel(
-    input_chunk_length=10,
-    output_chunk_length=5,
-    generic_architecture=True,
-    num_stacks=10,
-    num_blocks=3,
-    num_layers=4,
-    layer_widths=512,
-    n_epochs=50,
-    nr_epochs_val_period=1,
-    batch_size=5,
-    model_name="nbeats_interpretable_run",
-    )
-
-    model_nbeats.fit(series=train, verbose=True)
-
-    future = pd.DataFrame()
-    future[forecasting_col] = df[forecasting_col].to_list()
-
-    
-    start_limit = len(future)
-    end_limit = start_limit + future_limit
-
-    remaning_values = [0 for x in range(start_limit,end_limit)]
-    remaning_data_frame = pd.DataFrame()
-    remaning_data_frame[forecasting_col] = remaning_values
-
-    future = future.append(remaning_data_frame,ignore_index=True)
-
-    future_series = TimeSeries.from_series(future)
-
-    pred_series = model_nbeats.historical_forecasts(
-    future_series,
-    start=start_limit,
-    retrain=False,
-    verbose=False,)
-
-    pred_array = np.absolute(pred_series.univariate_values())
-    return pred_array
-  
 
 
 def nbeats_v2_model_full(df,forecasting_col,future_limit):
@@ -88,7 +37,7 @@ def nbeats_v2_model_full(df,forecasting_col,future_limit):
     num_blocks=3,
     num_layers=4,
     layer_widths=512,
-    n_epochs=10,
+    n_epochs=100,
     nr_epochs_val_period=1,
     batch_size=5,
     model_name="nbeats_interpretable_run",
@@ -226,3 +175,62 @@ def xgboost_model_full(df,forecasting_col,date_col,future_limit,type,end_date):
     test_df = test_df[['dayofweek','dayofyear','dayofmonth','weekofyear','week','weekday','daysInMonth','is_leap_year']]
     preds= reg.predict(test_df)
     return preds
+
+
+def transformers_model_full(df,forecasting_col,future_limit):
+    target = df
+
+    train = target
+    val = target
+
+    train = TimeSeries.from_dataframe(train)
+    val = TimeSeries.from_dataframe(val)
+
+
+    model = TransformerModel(
+            input_chunk_length=12,
+            output_chunk_length=1,
+            batch_size=4,
+            n_epochs=100,
+            model_name="transformer",
+            nr_epochs_val_period=10,
+            d_model=16,
+            nhead=2,
+            num_encoder_layers=10,
+            num_decoder_layers=10,
+            dim_feedforward=128,
+            dropout=0.5,
+            activation="relu",
+            random_state=42,
+            save_checkpoints=True,
+            force_reset=True,)
+
+    model.fit(series=train, val_series=val, verbose=True)
+
+    future = pd.DataFrame()
+    future[forecasting_col] = df[forecasting_col].to_list()
+    
+    start_limit = len(future)
+    end_limit = start_limit + future_limit
+
+    remaning_values = [0 for x in range(start_limit,end_limit)]
+    remaning_data_frame = pd.DataFrame()
+    remaning_data_frame[forecasting_col] = remaning_values
+
+    future = future.append(remaning_data_frame,ignore_index=True)
+
+    future_series = TimeSeries.from_series(future)
+
+    pred_series = model.historical_forecasts(
+    future_series,
+    start=start_limit,
+    retrain=False,
+    verbose=False,)
+
+    # pred_array = np.absolute(pred_series.univariate_values())
+    pred_array = pred_series.univariate_values()
+    return pred_array
+
+   
+
+
